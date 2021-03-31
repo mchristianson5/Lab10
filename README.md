@@ -2,12 +2,12 @@
 
 ## Build Instrctions:
 
-mkdir build
-cd build
-cmake ..
-make
-
-Will generate server.out and client.out
+mkdir build  
+cd build  
+cmake ..  
+make  
+  
+Will generate server.out and client.out  
 
 
 ## Source Layout:
