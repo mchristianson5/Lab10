@@ -21,7 +21,9 @@ struct sockaddr_in saddr;
 char *serverIP   = "127.0.0.1";
 int   serverPORT = 1234;
 int   sock;
-
+char command[16], pathname[64];
+//                0           1      2     3     4       5       6      
+char *cmd[] = {"lmkdir", "lrmdir","lls", "lcd", "lpwd","lrm", "lcat", 0};
 int init()
 {
     int n; 
@@ -46,21 +48,71 @@ int init()
     }
     printf("4. connected to server OK\n");
 }
+
+int findCmd(char *command) //finding the cmd for main menu
+{
+   int i = 0;
+   while(cmd[i]){
+     if (strcmp(command, cmd[i])==0)
+         return i;
+     i++;
+   }
+   return -1;
+}
   
 int main(int argc, char *argv[], char *env[]) 
 { 
+    int j = 0;
     int  n;
+    int i;
     char line[MAX], ans[MAX];
+    int index;
 
     init();
-  
+      
     while (1){
-      printf("input a line : ");
+      printf("****************************MENU*************************\n");
+      printf("get put ls cd pwd mkdir rmdir rm quit\n");
+      printf("lcat lls lcd lpwd lmkdir lrmdir lrm\n");
+      printf("*****************************************************\n");
+      printf("enter command Line : ");
       fgets(line, MAX, stdin);
+      line[strlen(line)-1] = 0;
+      printf("line=%s\n", line);  
+      sscanf(line, "%s %s", command, pathname);
+      printf("command=%s pathname=%s\n", command, pathname);
+      if (command[0]==0) 
+         continue;
+      index = findCmd(command);   
+     
       line[strlen(line)-1] = 0;        // kill \n at end
       if (line[0]==0)                  // exit if NULL line
          exit(0);
+        int r;
+        char buf[MAX];
+        char *currentPath;
+       switch (index){
+        case 0: r = mkdir(pathname, 0755); break;
+        case 1: r = rmdir(pathname); break;
+        case 2:  break;
+        case 3: r = chdir(pathname);          break;
+        case 4:currentPath = getcwd(buf, MAX);
+            printf("Current Path: %s\n", currentPath);
+        		break;
+        case 5: r =  unlink(pathname);    break;
+        case 6: 
+         j = 0;
+         for(i = j = 0; line[i+1] != NULL; i++){
+             if(line[i] != 'l'){
+                 line[j++] = line[i];
+             }
+         }
+         line[j] = '\0';
+        printf("LINE:%s\n", line);
 
+         system(line); 
+           break; //cat
+      }
       // Send ENTIRE line to server
       n = write(sock, line, MAX);
       printf("client: wrote n=%d bytes; line=(%s)\n", n, line);

@@ -21,7 +21,9 @@
 int server_sock, client_sock;      // file descriptors for sockets
 char *serverIP = "127.0.0.1";      // hardcoded server IP address
 int serverPORT = 1234;             // hardcoded server port number
-
+char command[16], pathname[64];
+//                0         1     2     3     4      5     6    7     
+char *cmd[] = {"mkdir", "rmdir","ls", "cd", "pwd","rm", "get","put", 0};
 struct sockaddr_in saddr, caddr;   // socket addr structs
 
 int init()
@@ -52,10 +54,22 @@ int init()
     printf("5. server at IP=%s port=%d\n", serverIP, serverPORT);
 }
   
+int findCmd(char *command) //finding the cmd for main menu
+{
+   int i = 0;
+   while(cmd[i]){
+     if (strcmp(command, cmd[i])==0)
+         return i;
+     i++;
+   }
+   return -1;
+}
+
 int main() 
 {
     int n, length;
     char line[MAX];
+    int  index;
     
     init();  
 
@@ -84,7 +98,30 @@ int main()
          }
          line[n]=0;
          printf("server: read  n=%d bytes; line=[%s]\n", n, line);
-
+         sscanf(line, "%s %s", command, pathname);
+      printf("command=%s pathname=%s\n", command, pathname);
+      if (command[0]==0) 
+         continue;
+      index = findCmd(command);   
+     
+      if (line[0]==0)                  // exit if NULL line
+         exit(0);
+        int r;
+        char buf[MAX];
+        char *currentPath;
+       switch (index){
+        case 0: r = mkdir(pathname, 0755); break;
+        case 1: r = rmdir(pathname); break;
+        case 2:  break;
+        case 3: r = chdir(pathname);          break;
+        case 4:currentPath = getcwd(buf, MAX);
+            printf("Current Path: %s\n", currentPath);
+        		break;
+        case 5: r =  unlink(pathname);    break;
+        case 6:  break; //get
+        case 7: break; //put
+      }
+         
          strcat(line, " ECHO");
          // send the echo line to client 
          n = write(client_sock, line, MAX);
