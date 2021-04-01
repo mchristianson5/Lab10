@@ -85,7 +85,6 @@ int main(int argc, char *argv[], char *env[])
          continue;
       index = findCmd(command);   
      
-      line[strlen(line)-1] = 0;        // kill \n at end
       if (line[0]==0)                  // exit if NULL line
          exit(0);
         int r;
@@ -100,19 +99,19 @@ int main(int argc, char *argv[], char *env[])
             printf("Current Path: %s\n", currentPath);
         		break;
         case 5: r =  unlink(pathname);    break;
-        case 6: 
-         j = 0;
-         for(i = j = 0; line[i+1] != NULL; i++){
+        case 6:   
+         for(i = 0; line[i] != '\0'; i++){
              if(line[i] != 'l'){
                  line[j++] = line[i];
              }
          }
-         line[j] = '\0';
-        printf("LINE:%s\n", line);
-
+       line[j] = '\0';
+         printf("LINE:%s\n", line);
          system(line); 
            break; //cat
       }
+    //line[strlen(line)-1] = 0;        // kill \n at end
+
       // Send ENTIRE line to server
       n = write(sock, line, MAX);
       printf("client: wrote n=%d bytes; line=(%s)\n", n, line);
