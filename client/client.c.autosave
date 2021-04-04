@@ -179,8 +179,8 @@ void lcat(char *line)
         system(line);
 }
 
-void send_to_server(const char *line, int socket)
+void send_to_server(const char *line, int sock)
 {
-        int n = write(socket, line, MAX);
+        int n = write(sock, line, MAX);
         printf("client: wrote n=%d bytes; line=(%s)\n", n, line);
 }
