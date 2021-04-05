@@ -14,5 +14,6 @@ void lpwd();
 void lrm(const char *pathname);
 void lcat(char *line);
 void put(const char *pathname, int sock);
+void get(const char *pathname, int sock);
 
 #endif // CLIENT_H

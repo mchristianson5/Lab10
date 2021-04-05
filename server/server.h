@@ -3,5 +3,6 @@
 
 void init();
 void put(const char *pathname);
+void get(const char *pathname);
 
 #endif // SERVER_H

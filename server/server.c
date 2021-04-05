@@ -143,6 +143,7 @@ int main()
                                 r = unlink(pathname);
                                 break;
                         case 6:
+                                get(pathname);
                                 break; // get
                         case 7:
                                 put(pathname);
@@ -152,9 +153,9 @@ int main()
                                 sprintf(line, "Error: %d %s", errno, strerror(errno));
                         }
 
-                        strcat(line, " ECHO");
-                        // send the echo line to client
-                        n = write(client_sock, line, MAX);
+//                        strcat(line, " ECHO");
+//                        // send the echo line to client
+//                        n = write(client_sock, line, MAX);
 
                         //printf("server: wrote n=%d bytes; ECHO=[%s]\n", n, line);
                 }
@@ -190,4 +191,36 @@ void put(const char *pathname)
                         write(fd, buffer, bytes_read);
                 }
         }
+        close(fd);
+}
+
+void get(const char *pathname)
+{
+        struct stat st;
+        char buffer[MAX];
+        char size_buffer[MAX];
+        int bytes_read = 0;
+        int bytes_sent = 0;
+
+        int fd = open(pathname, O_RDWR);
+        if (fd != -1) {
+                stat(pathname, &st);
+                sprintf(buffer, "%ld", st.st_size);
+                write(client_sock, buffer, MAX); // Send the size of the file.
+                printf("Sent: %ld as file size.", st.st_size);
+                bytes_read = read(fd, buffer, MAX);
+                while(bytes_read != 0) {
+                        sprintf(size_buffer, "%d", bytes_read);
+                        bytes_sent = write(client_sock, size_buffer, MAX); // Write size of line sent.
+                        if (bytes_sent == -1) {
+                                printf("Error sending file. %s", strerror(errno));
+                        }
+                        bytes_sent = write(client_sock, buffer, bytes_read);
+                        if (bytes_sent == -1) {
+                                printf("Error sending file. %s", strerror(errno));
+                        }
+                        bytes_read = read(fd, buffer, MAX);
+                }
+        }
+        close(fd);
 }
