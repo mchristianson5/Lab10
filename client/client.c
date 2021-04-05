@@ -112,18 +112,22 @@ int run_client()
                         break; // cat
                 case 7:
                         send_to_server(line, sock);
+
                         put(pathname, sock);
+                        // Read a line from sock and show it
+                        bzero(ans, MAX);
+                        n = read(sock, ans, MAX);
+                        printf("client: read  n=%d bytes; echo=(%s)\n", n, ans);
                         break;
                 case -1:
                         send_to_server(line, sock);
+                        // Read a line from sock and show it
+                        bzero(ans, MAX);
+                        n = read(sock, ans, MAX);
+                        printf("client: read  n=%d bytes; echo=(%s)\n", n, ans);
                         break;
                 }
                 // line[strlen(line)-1] = 0;        // kill \n at end
-
-                // Read a line from sock and show it
-                bzero(ans, MAX);
-                n = read(sock, ans, MAX);
-                printf("client: read  n=%d bytes; echo=(%s)\n", n, ans);
         }
 }
 
@@ -193,6 +197,7 @@ void put(const char *pathname, int sock)
 {
         struct stat st;
         char buffer[MAX];
+        char size_buffer[MAX];
         int bytes_read = 0;
         int bytes_sent = 0;
 
@@ -204,8 +209,8 @@ void put(const char *pathname, int sock)
                 printf("Sent: %ld as file size.", st.st_size);
                 bytes_read = read(fd, buffer, MAX);
                 while(bytes_read != 0) {
-                        sprintf(buffer, "%d", bytes_read);
-                        bytes_sent = write(sock, buffer, MAX); // Write size of line sent.
+                        sprintf(size_buffer, "%d", bytes_read);
+                        bytes_sent = write(sock, size_buffer, MAX); // Write size of line sent.
                         if (bytes_sent == -1) {
                                 printf("Error sending file. %s", strerror(errno));
                         }
