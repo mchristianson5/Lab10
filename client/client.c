@@ -22,8 +22,8 @@
 #define BLK 1024
 
 
-//                            0           1      2     3     4       5       6        7
-const char *local_cmd[] = {"lmkdir", "lrmdir", "lls", "lcd", "lpwd", "lrm", "lcat", "put", 0};
+//                            0           1      2     3     4       5       6        7       8
+const char *local_cmd[] = {"lmkdir", "lrmdir", "lls", "lcd", "lpwd", "lrm", "lcat", "ls","put", 0};
 char *t1 = "xwrxwrxwr-------";
 char *t2 = "----------------";
 
@@ -198,6 +198,16 @@ int run_client(int argc, char *argv[])
                         lcat(line);
                         break; // cat
                 case 7:
+                    send_to_server(line, sock);
+                    bzero(ans, MAX);
+                    while(strcmp(ans, "DONE") != 0){
+                    n = read(sock, ans, MAX);
+                    if(strcmp(ans, "DONE") != 0){
+                     printf("%s",ans);
+                    }
+                    }
+                        break;
+                case 8:
                         send_to_server(line, sock);
 
                         put(pathname, sock);
@@ -206,11 +216,11 @@ int run_client(int argc, char *argv[])
                         n = read(sock, ans, MAX);
                         printf("client: read  n=%d bytes; echo=(%s)\n", n, ans);
                         break;
-                case 8:
+                case 9:
                         send_to_server(line, sock);
                         get(pathname, sock);
                         break;
-                case 9:
+                case 10:
                         exit(0);
                 case -1:
                         send_to_server(line, sock);

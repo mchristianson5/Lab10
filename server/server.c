@@ -23,10 +23,117 @@
 #define BLK 1024
 
 int server_sock, client_sock; // file descriptors for sockets
+char *t1 = "xwrxwrxwr-------";
+char *t2 = "----------------";
 
 //                        0         1     2     3     4      5     6    7
 char *local_cmd[] = {"mkdir", "rmdir", "ls", "cd", "pwd", "rm", "get", "put", "quit", 0};
 struct sockaddr_in saddr, caddr; // socket addr structs
+int ls_file(char *fname)
+{
+  char lsLine[MAX];
+  int n;
+        struct stat fstat, *sp;
+        int r, i;
+        char ftime[64];
+        sp = &fstat;
+        if ((r = lstat(fname, &fstat)) < 0) {
+            sprintf(lsLine, "can’t stat %s\n", fname);
+            n = write(client_sock, lsLine, MAX);
+                exit(1);
+                // 256 8 System Calls for File Operations
+        }
+        if ((sp->st_mode & 0xF000) == 0x8000){ // if (S_ISREG())
+            sprintf(lsLine, "%c", '-');
+          n = write(client_sock, lsLine, MAX);       
+        }
+        if ((sp->st_mode & 0xF000) == 0x4000){ // if (S_ISDIR())
+            sprintf(lsLine,"%c", 'd');
+            n = write(client_sock, lsLine, MAX);      
+        }       
+        if ((sp->st_mode & 0xF000) == 0xA000){ // if (S_ISLNK())
+              sprintf(lsLine,"%c", 'l');
+              n = write(client_sock, lsLine, MAX);
+        }
+        for (i = 8; i >= 0; i--) {
+                if (sp->st_mode & (1 << i)){ // print r|w|x
+                      sprintf(lsLine,"%c", t1[i]);
+                      n = write(client_sock, lsLine, MAX);
+                }
+                else{
+                        sprintf(lsLine,"%c", t2[i]);
+                        n = write(client_sock, lsLine, MAX);
+                }
+        }
+        sprintf(lsLine,"%4d ", sp->st_nlink);
+        n = write(client_sock, lsLine, MAX);
+        sprintf(lsLine,"%4d ", sp->st_gid);
+        n = write(client_sock, lsLine, MAX);
+        sprintf(lsLine,"%4d ", sp->st_uid);
+        n = write(client_sock, lsLine, MAX);
+        sprintf(lsLine,"%8d ", sp->st_size);
+        n = write(client_sock, lsLine, MAX);
+        strcpy(ftime, ctime(&sp->st_ctime)); // print time in calendar form
+        ftime[strlen(ftime) - 1] = 0; // kill \n at end
+        sprintf(lsLine,"%s ", ftime);
+        n = write(client_sock, lsLine, MAX);
+        // print name
+        sprintf(lsLine,"%s", basename(fname)); // print file basename
+        n = write(client_sock, lsLine, MAX);
+        // print -> linkname if symbolic file
+        if ((sp->st_mode & 0xF000) == 0xA000) {
+                // use readlink() to read linkname
+
+                // printf(" -> %s", linkname); // print linked name
+        }
+        sprintf(lsLine,"\n");
+        n = write(client_sock, lsLine, MAX);
+        return 0;
+}
+
+int ls_dir(char *dname)
+{
+        // use opendir(), readdir(); then call ls_file(name)
+        DIR *dir = opendir(dname);
+        struct dirent *dp = NULL;
+        dp = readdir(dir);
+        do {
+                ls_file(dp->d_name);
+                dp = readdir(dir);
+        } while(dp != NULL);
+        return 0;
+}
+
+int ls(char *pathname)
+{
+  char *lsLine[MAX];
+  int n;
+        struct stat mystat, *sp = &mystat;
+        int r;
+        char *filename, path[1024], cwd[256];
+        filename = "./"; // default to CWD
+        if (strcmp(pathname, "") != 0)
+                filename = pathname;// if specified a filename
+        if ((r = lstat(filename, sp) < 0)) {
+                sprintf(line,"no such file %s\n", filename);
+                 n = write(client_sock, lsLine, MAX);
+
+                exit(1);
+        }
+
+        strcpy(path, filename);
+        if (path[0] != '/') { // filename is relative : get CWD path
+                getcwd(cwd, 256);
+                strcpy(path, cwd);
+                strcat(path, "/");
+                strcat(path, filename);
+        }
+        if (S_ISDIR(sp->st_mode))
+                ls_dir(path);
+        else
+                ls_file(path);
+        return 0;
+}
 
 void init()
 {
@@ -79,7 +186,8 @@ int main()
 {
         int n;
         unsigned int length;
-        char line[MAX];
+       char line[MAX];
+
         int index;
 
         char command[16], pathname[64];
@@ -126,21 +234,40 @@ int main()
                         switch (index) {
                         case 0:
                                 r = mkdir(pathname, 0755);
+                                strcat(line, " ECHO");
+                                //send the echo line to client
+                                 n = write(client_sock, line, MAX);
                                 break;
                         case 1:
                                 r = rmdir(pathname);
+                                strcat(line, " ECHO");
+                                //send the echo line to client
+                                 n = write(client_sock, line, MAX);
                                 break;
                         case 2:
+                                ls(pathname);
+                               //strcat(line, " ECHO");
+                                //send the echo line to client
+                                n = write(client_sock, "DONE", MAX);
                                 break;
                         case 3:
                                 r = chdir(pathname);
+                                strcat(line, " ECHO");
+                                //send the echo line to client
+                                 n = write(client_sock, line, MAX);
                                 break;
                         case 4:
                                 currentPath = getcwd(buf, MAX);
                                 sprintf(line, "Current Path: %s\n", currentPath);
+                                strcat(line, " ECHO");
+                                //send the echo line to client
+                                 n = write(client_sock, line, MAX);                                
                                 break;
                         case 5:
                                 r = unlink(pathname);
+                                strcat(line, " ECHO");
+                                //send the echo line to client
+                                 n = write(client_sock, line, MAX);
                                 break;
                         case 6:
                                 get(pathname);
