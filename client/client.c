@@ -75,9 +75,13 @@ int ls_dir(char *dname)
         DIR *dir = opendir(dname);
         struct dirent *dp = NULL;
         dp = readdir(dir);
-        ls_file(dname);
+        do {
+                ls_file(dp->d_name);
+                dp = readdir(dir);
+        } while(dp != NULL);
         return 0;
 }
+
 int ls(char *pathname)
 {
         struct stat mystat, *sp = &mystat;
