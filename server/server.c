@@ -115,7 +115,7 @@ int ls(char *pathname)
         if (strcmp(pathname, "") != 0)
                 filename = pathname;// if specified a filename
         if ((r = lstat(filename, sp) < 0)) {
-                sprintf(line,"no such file %s\n", filename);
+                sprintf(lsLine,"no such file %s\n", filename);
                  n = write(client_sock, lsLine, MAX);
 
                 exit(1);
