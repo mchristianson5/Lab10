@@ -21,6 +21,7 @@
 #define MAX 256
 #define BLK 1024
 
+
 //                            0           1      2     3     4       5       6        7
 const char *local_cmd[] = {"lmkdir", "lrmdir", "lls", "lcd", "lpwd", "lrm", "lcat", "put", 0};
 char *t1 = "xwrxwrxwr-------";
@@ -205,6 +206,12 @@ int run_client(int argc, char *argv[])
                         n = read(sock, ans, MAX);
                         printf("client: read  n=%d bytes; echo=(%s)\n", n, ans);
                         break;
+                case 8:
+                        send_to_server(line, sock);
+                        get(pathname, sock);
+                        break;
+                case 9:
+                        exit(0);
                 case -1:
                         send_to_server(line, sock);
                         // Read a line from sock and show it
@@ -306,3 +313,36 @@ void put(const char *pathname, int sock)
         close(fd);
 }
 
+
+void get(const char *pathname, int sock)
+{
+        char buffer[MAX];
+        int file_size = 0;
+        int total_read = 0;
+        int bytes_read = 0;
+
+        int fd = open(pathname, O_CREAT | O_TRUNC | O_RDWR);
+        fchmod(fd, 0755);
+        if (fd != -1) {
+                // Get the file size.
+                bytes_read = read(sock, buffer, MAX);
+                file_size = atoi(buffer);
+
+                while (bytes_read != 0 && total_read != file_size) {
+                        memset(buffer, 0, MAX);
+                        // Get size of transfer.
+                        bytes_read = read(sock, buffer, MAX);
+                        total_read += atoi(buffer);
+
+                        if (bytes_read == 0)
+                                break;
+
+                        bytes_read = read(sock, buffer, MAX);
+
+                        if(bytes_read == 0)
+                                break;
+                        write(fd, buffer, bytes_read);
+                }
+        }
+        close(fd);
+}

@@ -14,8 +14,10 @@ void lpwd();
 void lrm(const char *pathname);
 void lcat(char *line);
 void put(const char *pathname, int sock);
+void get(const char *pathname, int sock);
 int ls_file(char *fname);
 int ls_dir(char *dname);
-int ls(int argc, char* argv[]);
+int ls(const char *pathname);
+
 
 #endif // CLIENT_H
