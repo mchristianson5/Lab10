@@ -21,8 +21,8 @@
 #define MAX 256
 #define BLK 1024
 
-//                            0           1      2     3     4       5       6
-const char *local_cmd[] = {"lmkdir", "lrmdir", "lls", "lcd", "lpwd", "lrm", "lcat", 0};
+//                            0           1      2     3     4       5       6        7
+const char *local_cmd[] = {"lmkdir", "lrmdir", "lls", "lcd", "lpwd", "lrm", "lcat", "put", 0};
 
 int init()
 {
@@ -87,7 +87,7 @@ int run_client()
                         continue;
                 index = findCmd(command);
 
-                if (line[0] == 0) // exit if NULL line
+                if (strcmp(line, "") == 0) // exit if NULL line
                         exit(0);
                 switch (index) {
                 case 0:
@@ -110,7 +110,11 @@ int run_client()
                 case 6:
                         lcat(line);
                         break; // cat
-                default:
+                case 7:
+                        send_to_server(line, sock);
+                        put(pathname, sock);
+                        break;
+                case -1:
                         send_to_server(line, sock);
                         break;
                 }
@@ -179,8 +183,38 @@ void lcat(char *line)
         system(line);
 }
 
-void send_to_server(const char *line, int socket)
+void send_to_server(const char *line, int sock)
 {
-        int n = write(socket, line, MAX);
+        int n = write(sock, line, MAX);
         printf("client: wrote n=%d bytes; line=(%s)\n", n, line);
+}
+
+void put(const char *pathname, int sock)
+{
+        struct stat st;
+        char buffer[MAX];
+        int bytes_read = 0;
+        int bytes_sent = 0;
+
+        int fd = open(pathname, O_RDONLY);
+        if (fd != -1) {
+                stat(pathname, &st);
+                sprintf(buffer, "%ld", st.st_size);
+                write(sock, buffer, MAX); // Send the size of the file.
+                printf("Sent: %ld as file size.", st.st_size);
+                bytes_read = read(fd, buffer, MAX);
+                while(bytes_read != 0) {
+                        sprintf(buffer, "%d", bytes_read);
+                        bytes_sent = write(sock, buffer, MAX); // Write size of line sent.
+                        if (bytes_sent == -1) {
+                                printf("Error sending file. %s", strerror(errno));
+                        }
+                        bytes_sent = write(sock, buffer, bytes_read);
+                        if (bytes_sent == -1) {
+                                printf("Error sending file. %s", strerror(errno));
+                        }
+                        bytes_read = read(fd, buffer, MAX);
+                }
+        }
+        close(fd);
 }

@@ -1,6 +1,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <errno.h>
 
 #include <arpa/inet.h>
 #include <netdb.h>
@@ -16,19 +17,26 @@
 #include <time.h>
 
 #include "shared/info.h"
+#include "server.h"
 
 #define MAX 256
 #define BLK 1024
 
 int server_sock, client_sock; // file descriptors for sockets
 
-char command[16], pathname[64];
-//                0         1     2     3     4      5     6    7
+//                        0         1     2     3     4      5     6    7
 char *local_cmd[] = {"mkdir", "rmdir", "ls", "cd", "pwd", "rm", "get", "put", 0};
 struct sockaddr_in saddr, caddr; // socket addr structs
 
-int init()
+void init()
 {
+        char buf[MAX];
+        getcwd(buf, MAX);
+        if(chroot(buf) == -1) {
+                printf("Error chroot: %d %s", errno, strerror(errno));
+        }
+
+
         printf("1. create a socket\n");
         server_sock = socket(AF_INET, SOCK_STREAM, 0);
         if (server_sock < 0) {
@@ -45,6 +53,7 @@ int init()
         printf("3. bind socket to server\n");
         if ((bind(server_sock, (struct sockaddr *)&saddr, sizeof(saddr))) != 0) {
                 printf("socket bind failed\n");
+                printf("Error: %d %s\n", errno, strerror(errno));
                 exit(0);
         }
         printf("4. server listen with queue size = 5\n");
@@ -68,9 +77,12 @@ int findCmd(char *command) // finding the cmd for main menu
 
 int main()
 {
-        int n, length;
+        int n;
+        unsigned int length;
         char line[MAX];
         int index;
+
+        char command[16], pathname[64];
 
         init();
 
@@ -80,6 +92,7 @@ int main()
                 client_sock = accept(server_sock, (struct sockaddr *)&caddr, &length);
                 if (client_sock < 0) {
                         printf("server: accept error\n");
+                        printf("Error: %d %s\n", errno, strerror(errno));
                         exit(1);
                 }
 
@@ -107,7 +120,7 @@ int main()
 
                         if (line[0] == 0) // exit if NULL line
                                 exit(0);
-                        int r;
+                        int r = 0;
                         char buf[MAX];
                         char *currentPath;
                         switch (index) {
@@ -124,7 +137,7 @@ int main()
                                 break;
                         case 4:
                                 currentPath = getcwd(buf, MAX);
-                                printf("Current Path: %s\n", currentPath);
+                                sprintf(line, "Current Path: %s\n", currentPath);
                                 break;
                         case 5:
                                 r = unlink(pathname);
@@ -132,14 +145,49 @@ int main()
                         case 6:
                                 break; // get
                         case 7:
+                                put(pathname);
                                 break; // put
+                        }
+                        if (r != 0) {
+                                sprintf(line, "Error: %d %s", errno, strerror(errno));
                         }
 
                         strcat(line, " ECHO");
                         // send the echo line to client
                         n = write(client_sock, line, MAX);
 
-                        printf("server: wrote n=%d bytes; ECHO=[%s]\n", n, line);
+                        //printf("server: wrote n=%d bytes; ECHO=[%s]\n", n, line);
+                }
+        }
+}
+
+
+void put(const char *pathname)
+{
+        char buffer[MAX];
+        int file_size = 0;
+        int total_read = 0;
+        int bytes_read = 0;
+
+        int fd = open(pathname, O_CREAT | O_TRUNC | O_RDWR);
+        if (fd != -1) {
+                // Get the file size.
+                bytes_read = read(client_sock, buffer, MAX);
+                file_size = atoi(buffer);
+
+                while (bytes_read != 0 && total_read != file_size) {
+                        // Get size of transfer.
+                        bytes_read = read(client_sock, buffer, MAX);
+                        total_read += atoi(buffer);
+
+                        if (bytes_read == 0)
+                                break;
+
+                        bytes_read = read(client_sock, buffer, MAX);
+
+                        if(bytes_read == 0)
+                                break;
+                        write(fd, buffer, bytes_read);
                 }
         }
 }
