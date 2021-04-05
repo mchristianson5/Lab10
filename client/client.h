@@ -17,7 +17,7 @@ void put(const char *pathname, int sock);
 void get(const char *pathname, int sock);
 int ls_file(char *fname);
 int ls_dir(char *dname);
-int ls(const char *pathname);
+int ls(char *pathname);
 
 
 #endif // CLIENT_H
