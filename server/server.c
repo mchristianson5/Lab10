@@ -25,7 +25,7 @@
 int server_sock, client_sock; // file descriptors for sockets
 
 //                        0         1     2     3     4      5     6    7
-char *local_cmd[] = {"mkdir", "rmdir", "ls", "cd", "pwd", "rm", "get", "put", 0};
+char *local_cmd[] = {"mkdir", "rmdir", "ls", "cd", "pwd", "rm", "get", "put", "quit", 0};
 struct sockaddr_in saddr, caddr; // socket addr structs
 
 void init()
@@ -148,6 +148,9 @@ int main()
                         case 7:
                                 put(pathname);
                                 break; // put
+
+                        case 8:
+                                exit(0);
                         }
                         if (r != 0) {
                                 sprintf(line, "Error: %d %s", errno, strerror(errno));

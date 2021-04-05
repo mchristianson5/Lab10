@@ -22,7 +22,7 @@
 #define BLK 1024
 
 //                            0           1      2     3     4       5       6        7      8
-const char *local_cmd[] = {"lmkdir", "lrmdir", "lls", "lcd", "lpwd", "lrm", "lcat", "put", "get", 0};
+const char *local_cmd[] = {"lmkdir", "lrmdir", "lls", "lcd", "lpwd", "lrm", "lcat", "put", "get", "quit", 0};
 
 int init()
 {
@@ -123,6 +123,8 @@ int run_client()
                         send_to_server(line, sock);
                         get(pathname, sock);
                         break;
+                case 9:
+                        exit(0);
                 case -1:
                         send_to_server(line, sock);
                         // Read a line from sock and show it
