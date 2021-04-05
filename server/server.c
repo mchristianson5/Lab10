@@ -71,7 +71,7 @@ int ls_file(char *fname)
         n = write(client_sock, lsLine, MAX);
         sprintf(lsLine,"%4d ", sp->st_uid);
         n = write(client_sock, lsLine, MAX);
-        sprintf(lsLine,"%8d ", sp->st_size);
+        sprintf(lsLine,"%8ld ", sp->st_size);
         n = write(client_sock, lsLine, MAX);
         strcpy(ftime, ctime(&sp->st_ctime)); // print time in calendar form
         ftime[strlen(ftime) - 1] = 0; // kill \n at end
@@ -106,18 +106,15 @@ int ls_dir(char *dname)
 
 int ls(char *pathname)
 {
-  char *lsLine[MAX];
-  int n;
+        char lsLine[MAX];
         struct stat mystat, *sp = &mystat;
-        int r;
         char *filename, path[1024], cwd[256];
         filename = "./"; // default to CWD
         if (strcmp(pathname, "") != 0)
                 filename = pathname;// if specified a filename
-        if ((r = lstat(filename, sp) < 0)) {
-                sprintf(line,"no such file %s\n", filename);
-                 n = write(client_sock, lsLine, MAX);
-
+        if (lstat(filename, sp) < 0) {
+                sprintf(lsLine,"no such file %s\n", filename);
+                write(client_sock, lsLine, MAX);
                 exit(1);
         }
 
